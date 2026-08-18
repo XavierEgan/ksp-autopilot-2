@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import time
 from AutopilotContext import AutoPilotContext, BlockControls, Control, FlightParams, Runway, Telemetry
-from Math import clamp, circular_error
+from Math import circular_error
 
 class Mode:
     def __init__(self, name: str, blocks: list['ControlChain']):
@@ -107,7 +107,7 @@ class HeadingControlBlock(ControlBlock):
         if below_block is not None:
             below_block.setpoint = control
 
-class VerticalSpeedControlBlock(ControlBlock):
+class VerticalVelocityControlBlock(ControlBlock):
     def __init__(self, context: AutoPilotContext):
         super().__init__(context)
 
@@ -130,7 +130,7 @@ class AltitudeControlBlock(ControlBlock):
     def update(self, dt: float, below_block: 'ControlBlock | None') -> None:
         d = self.setpoint - self.context.telemetry.get_altitude()
 
-        control = self.context.controls.altitude.update(d, dt) * self.context.flight_params.max_pitch
+        control = self.context.controls.altitude.update(d, dt) * self.context.flight_params.max_vertical_velocity
         
         if below_block is not None:
             below_block.setpoint = control

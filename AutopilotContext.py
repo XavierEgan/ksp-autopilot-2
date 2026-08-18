@@ -25,7 +25,7 @@ class Telemetry:
         return self.vessel.flight(self.vessel.orbit.body.reference_frame).speed
     
     def get_vertical_velocity(self) -> float:
-        return self.vessel.flight(self.vessel.orbit.body.reference_frame).velocity[1]
+        return self.vessel.flight(self.vessel.orbit.body.reference_frame).vertical_speed
     
     def get_time(self) -> float:
         return self.space_center.ut
@@ -177,15 +177,14 @@ class BlockControls:
         tuning_p = 20000
 
         self.speed = PID(kp=1/20, ki=0, kd=1/20, kaw=0, min_output=-1, max_output=1)
-
-        self.pitch = AxisController(PID(kp=1/10, ki=1/10000, kd=1/30, kaw=1/10000, min_output=-0.25, max_output=1, log=False), context=None, q_ref=tuning_p)
-
+        self.pitch = AxisController(PID(kp=1/10, ki=1/10000, kd=1/30, kaw=1, min_output=-0.25, max_output=1, log=False), context=None, q_ref=tuning_p)
         self.roll = AxisController(PID(kp=1/20, ki=0, kd=1/30, kaw=0, min_output=-1, max_output=1), context=None, q_ref=tuning_p)
         self.ground_heading = AxisController(PID(kp=1/50, ki=0, kd=1/100, kaw=0, min_output=-1, max_output=1), context=None, q_ref=tuning_p)
 
+        self.vertical_velocity = AxisController(PID(kp=1/500, ki=1/200, kd=1/1000, kaw=1/1000, min_output=-1, max_output=1, log=True), context=None, q_ref=tuning_p)
         self.heading = AxisController(PID(kp=1/5, ki=0, kd=1/10, kaw=1/100, min_output=-1, max_output=1), context=None, q_ref=tuning_p)
 
-        self.altitude = AxisController(PID(kp=1/1000, ki=0, kd=1/2000, kaw=0, min_output=-0.2, max_output=1, log=True), context=None, q_ref=tuning_p)
+        self.altitude = AxisController(PID(kp=1/1000, ki=0, kd=0, kaw=0, min_output=-0.2, max_output=1, log=False), context=None, q_ref=tuning_p)
 
         self.centerline_follow = AxisController(PID(kp=1/10, ki=0, kd=0, kaw=0, min_output=-10, max_output=10), context=None, q_ref=tuning_p)
 
@@ -195,6 +194,7 @@ class BlockControls:
         self.pitch.context = context
         self.roll.context = context
         self.ground_heading.context = context
+        self.vertical_velocity.context = context
         self.heading.context = context
         self.altitude.context = context
         self.centerline_follow.context = context
@@ -208,6 +208,7 @@ class FlightParams:
         self.subsonic_cruise_speed = 200.0
         self.supersonic_cruise_speed = 1000.0
 
+        self.max_vertical_velocity = 20
         self.max_pitch = 15.0
         self.max_bank = 30
 

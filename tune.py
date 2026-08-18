@@ -46,7 +46,7 @@ while True:
         tune_pitch_roll.control_chains[0].blocks[0].setpoint = new_roll
         tune_pitch_roll.control_chains[1].blocks[0].setpoint = new_pitch
     
-    print(f"roll error: {tune_pitch_roll.control_chains[0].blocks[0].setpoint - context.telemetry.get_roll(): 4.2}, pitch error: {tune_pitch_roll.control_chains[1].blocks[0].setpoint - context.telemetry.get_pitch(): 4.2}")
+    # print(f"roll error: {tune_pitch_roll.control_chains[0].blocks[0].setpoint - context.telemetry.get_roll(): 4.2}, pitch error: {tune_pitch_roll.control_chains[1].blocks[0].setpoint - context.telemetry.get_pitch(): 4.2}")
 
     tune_pitch_roll.update(dt)
 

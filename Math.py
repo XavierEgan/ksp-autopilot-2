@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from AutopilotContext import AutoPilotContext
@@ -55,30 +55,67 @@ class Derivative:
         return (self.curr_value - self.prev_value) / dt
 
 class PID:
+    # ki and kaw are passed in these units so the tuning numbers stay human-sized
+    integral_scale = 1 / 10000
+
     def __init__(
-            self, 
-            kp: float, 
-            ki: float, 
-            kd: float, 
-            kaw: float, 
-            min_output: float = -1.0, 
-            max_output: float = 1.0, 
-            integral_authority: float = 0.25,
+            self,
+            kp: float,
+            ki: float,
+            kd: float,
+            kaw: float,
+            min_output: float = -1.0,
+            max_output: float = 1.0,
             log: bool = False
         ):
 
         self.kp = kp
-        self.ki = ki
+        self.ki = ki * PID.integral_scale
         self.kd = kd
-        self.kaw = kaw
+        self.kaw = kaw * PID.integral_scale
 
         self.min_output = min_output
         self.max_output = max_output
+
+        self.min_acc = min_output * 0.5
+        self.max_acc = max_output * 0.5
 
         self.accum: float = 0.0
         self.smoothing = Derivative()
 
         self.log = log
+    
+    @staticmethod
+    def from_ziegler_nichols(
+        type: Literal["p", "pi", "pd", "pid", "pessen_pid", "some_overshoot", "no_overshoot"],
+        Ku: float,
+        Tu: float,
+        min_output: float = -1.0, 
+        max_output: float = 1.0,
+        log: bool = False
+    ) -> 'PID':
+            # Ziegler-Nichols produces true gains, so undo the constructor's
+            # integral_scale to stop ki/kaw being scaled down twice
+            def entry(kp: float, ki: float, kd: float) -> dict[str, float]:
+                kaw = ki / kp if ki != 0.0 else 0.0
+                return {
+                    "kp": kp,
+                    "ki": ki / PID.integral_scale,
+                    "kd": kd,
+                    "kaw": kaw / PID.integral_scale,
+                }
+
+            gains = {
+                "p":              entry(0.5 * Ku,  0.0,                          0.0),
+                "pi":             entry(0.45 * Ku, 0.45 * Ku / (Tu / 1.2),       0.0),
+                "pd":             entry(0.8 * Ku,  0.0,                          0.8 * Ku * (Tu / 8.0)),
+                "pid":            entry(0.6 * Ku,  0.6 * Ku / (Tu / 2.0),        0.6 * Ku * (Tu / 8.0)),
+                "pessen_pid":     entry(0.7 * Ku,  0.7 * Ku / (Tu / 2.5),        0.7 * Ku * (3.0 * Tu / 20.0)),
+                "some_overshoot": entry(0.33 * Ku, 0.33 * Ku / (Tu / 2.0),       0.33 * Ku * (Tu / 3.0)),
+                "no_overshoot":   entry(0.2 * Ku,  0.2 * Ku / (Tu / 2.0),        0.2 * Ku * (Tu / 3.0)),
+            }
+
+            return PID(min_output=min_output, max_output=max_output, log=log, **gains[type])
     
     def update(self, error: float, dt: float) -> float:
         self.smoothing.set_next(error, dt)
@@ -97,7 +134,7 @@ class PID:
         self.accum += (output - raw_output) * self.kaw * dt
 
         # clamp windup
-        self.accum = clamp(self.accum, self.min_output, self.max_output)
+        self.accum = clamp(self.accum, self.min_acc, self.max_acc)
 
         if self.log:
             print(f"Proportional: {current_error * self.kp: <6.2f} | Derivative: {derivative * self.kd: <6.2f} | Integral: {self.accum: <6.2f}")
@@ -115,7 +152,6 @@ class AxisController:
         self.q_min = q_min
         self.original_kp = pid.kp
         self.original_kd = pid.kd
-        self.original_ki = pid.ki
 
     def update(self, error: float, dt: float) -> float:
         if self.context is None:
@@ -128,6 +164,5 @@ class AxisController:
         scale = self.q_ref / q
         self.pid.kp = self.original_kp * scale
         self.pid.kd = self.original_kd * scale
-        self.pid.ki = self.original_ki * scale
 
         return self.pid.update(error, dt)

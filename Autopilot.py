@@ -1,6 +1,6 @@
 import enum
 from typing import Callable
-from ControlBlocks import AltitudeControlBlock, CenterlineFollowBlock, ControlChain, CruiseManagerBlock, PreCruiseManagerBlock, SetSetpointBlock, GroundHeadingBlock, TakeoffRollManagerBlock, Mode, RollControlBlock, PitchControlBlock, SpeedControlBlock, HeadingControlBlock, YawDamperBlock, RotationManagerBlock
+from ControlBlocks import AltitudeControlBlock, CenterlineFollowBlock, ControlChain, CruiseManagerBlock, PreCruiseManagerBlock, SetSetpointBlock, GroundHeadingBlock, TakeoffRollManagerBlock, Mode, RollControlBlock, PitchControlBlock, SpeedControlBlock, HeadingControlBlock, VerticalVelocityControlBlock, YawDamperBlock, RotationManagerBlock
 from AutopilotContext import Runway, LatLong
 from AutopilotContext import AutoPilotContext, Control, FlightParams, Telemetry, BlockControls
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     # climb to cruise altitude the switch to cruise (which is supersonic)
     pre_cruise_mode = Mode("Pre-Cruise", [
-        ControlChain([SetSetpointBlock(context, context.flight_params.cruise_altitude), AltitudeControlBlock(context), PitchControlBlock(context)]),
+        ControlChain([SetSetpointBlock(context, context.flight_params.cruise_altitude), AltitudeControlBlock(context), VerticalVelocityControlBlock(context), PitchControlBlock(context)]),
         ControlChain([SetSetpointBlock(context, context.flight_params.subsonic_cruise_speed), SpeedControlBlock(context)]),
         ControlChain([SetSetpointBlock(context, context.flight_params.takeoff_runway.heading), HeadingControlBlock(context), RollControlBlock(context)]),
         ControlChain([YawDamperBlock(context)]),
@@ -79,14 +79,12 @@ if __name__ == "__main__":
     ])
 
     cruise_mode = Mode("Cruise", [
-        ControlChain([SetSetpointBlock(context, context.flight_params.cruise_altitude), AltitudeControlBlock(context), PitchControlBlock(context)]),
+        ControlChain([SetSetpointBlock(context, context.flight_params.cruise_altitude), AltitudeControlBlock(context), VerticalVelocityControlBlock(context), PitchControlBlock(context)]),
         ControlChain([SetSetpointBlock(context, context.flight_params.supersonic_cruise_speed), SpeedControlBlock(context)]),
         ControlChain([SetSetpointBlock(context, context.flight_params.takeoff_runway.heading), HeadingControlBlock(context), RollControlBlock(context)]),
         ControlChain([YawDamperBlock(context)]),
         ControlChain([CruiseManagerBlock(context)])
     ])
-
-    context = AutoPilotContext(Telemetry(), BlockControls(), Control(), FlightParams())
 
     rollout = FlightStateMachine(context, rollout_mode, lambda: should_transition_to_rotation(context))
     rotation = FlightStateMachine(context, rotation_mode, lambda: should_transition_to_precruise(context))
