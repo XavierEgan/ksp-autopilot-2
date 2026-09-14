@@ -91,6 +91,8 @@ class TelemetryFrame:
     altitude: float = 0 # altitude above sea level
     altitude_ground: float = 0 # altitude above ground level
 
+    air_density: float = 0
+
 class Telemetry:
     def __init__(self):
         self.conn = krpc.connect(name="AutoPilot")
@@ -131,6 +133,8 @@ class Telemetry:
         self.heading_stream = cast(
             Callable[[], float], self.conn.add_stream(getattr, surface_flight, "heading")
         )
+
+        self.
 
     @staticmethod
     def _to_vessel_axes(v: Vec3, rotation: Quat) -> Vec3:

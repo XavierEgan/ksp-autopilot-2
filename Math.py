@@ -145,20 +145,16 @@ class PID:
         self.accum = 0.0
 
 class AxisController:
-    def __init__(self, pid: PID, context: AutoPilotContext | None, q_ref: float, q_min: float = 20000.0):
+    def __init__(self, pid: PID, q_ref: float, q_min: float = 20000.0):
         self.pid = pid
-        self.context = context
         self.q_ref = q_ref
         self.q_min = q_min
         self.original_kp = pid.kp
         self.original_kd = pid.kd
 
-    def update(self, error: float, dt: float) -> float:
-        if self.context is None:
-            raise ValueError("Context must be provided for AxisController to update")
-
-        v = self.context.telemetry.get_speed()
-        rho = self.context.telemetry.get_density()
+    def update(self, context: AutoPilotContext, error: float, dt: float) -> float:
+        v = context.telemetry.V
+        rho = context.telemetry.get_density()
         q = max(0.5 * rho * v * v, self.q_min)
 
         scale = self.q_ref / q

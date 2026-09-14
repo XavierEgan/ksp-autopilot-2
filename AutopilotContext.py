@@ -1,8 +1,10 @@
 import math
 
 import krpc
-from krpc.services.spacecenter import Vessel, SpaceCenter
-from Math import AxisController, Derivative, clamp, LatLong, Runway, PID
+from krpc.services.spacecenter import SpaceCenter, Vessel
+
+from Math import PID, AxisController, Derivative, LatLong, Runway, clamp
+from Telemetry import TelemetryFrame
 
 
 class Control:
@@ -136,7 +138,7 @@ class AutoPilotContext:
     '''
     Single source of all information the autopilot may need
     '''
-    def __init__(self, telemetry: Telemetry, controls: BlockControls, control: Control, flight_params: FlightParams):
+    def __init__(self, telemetry: TelemetryFrame, controls: BlockControls, control: Control, flight_params: FlightParams):
         self.telemetry = telemetry
         self.controls = controls
         self.control = control
