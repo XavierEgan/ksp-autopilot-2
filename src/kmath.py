@@ -23,3 +23,22 @@ class Derivative:
         self.prev = pc
 
         return dy/dt
+
+class LowPass:
+    prev: tuple[float, float] | None
+    def __init__(self, tau: float) -> None:
+        self.tau: float = tau
+        self.prev = None
+
+    def __call__(self, pc: tuple[float, float]) -> float:
+        if self.prev is None:
+            self.prev = pc
+            return pc[1]
+
+        dt: float = pc[0] - self.prev[0]
+        alpha: float = dt / (self.tau + dt)
+        y: float = self.prev[1] + alpha * (pc[1] - self.prev[1])
+
+        self.prev = (pc[0], y)
+
+        return y

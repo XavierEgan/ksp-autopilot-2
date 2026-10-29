@@ -1,3 +1,6 @@
 web/
 
 **/*.pyc
+
+.git
+.venv
